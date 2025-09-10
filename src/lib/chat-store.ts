@@ -1,7 +1,7 @@
 "use server";
 import { Message as AIMsg, generateText } from "ai";
 import { generateId } from "ai";
-import { redis, togetherAISDKClient } from "./clients"; // Import your redis client
+import { storage, togetherAISDKClient } from "./clients"; // Import storage adapter
 import { generateTitlePrompt } from "./prompts";
 const CHAT_KEY_PREFIX = "chat:";
 
@@ -50,12 +50,12 @@ export async function createChat({
     title,
     createdAt: new Date(),
   };
-  await redis.set(`${CHAT_KEY_PREFIX}${id}`, JSON.stringify(initial));
+  await storage.set(`${CHAT_KEY_PREFIX}${id}`, JSON.stringify(initial));
   return id;
 }
 
 export async function loadChat(id: string): Promise<ChatData | null> {
-  const value = await redis.get(`${CHAT_KEY_PREFIX}${id}`);
+  const value = await storage.get(`${CHAT_KEY_PREFIX}${id}`);
   if (!value) return null;
   try {
     return typeof value === "string" ? JSON.parse(value) : (value as ChatData);
@@ -74,7 +74,7 @@ export async function saveNewMessage({
   const chat = await loadChat(id);
   if (chat) {
     const updatedMessages = [...(chat.messages || []), message];
-    await redis.set(
+    await storage.set(
       `${CHAT_KEY_PREFIX}${id}`,
       JSON.stringify({
         ...chat,
@@ -90,6 +90,6 @@ export async function saveNewMessage({
       csvFileUrl: null,
       title: null,
     };
-    await redis.set(`${CHAT_KEY_PREFIX}${id}`, JSON.stringify(newChat));
+    await storage.set(`${CHAT_KEY_PREFIX}${id}`, JSON.stringify(newChat));
   }
 }

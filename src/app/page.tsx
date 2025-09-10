@@ -7,7 +7,7 @@ import { HeroSection } from "@/components/hero-section";
 import { QuestionSuggestionCard } from "@/components/question-suggestion-card";
 import { extractCsvData } from "@/lib/csvUtils";
 import { createChat } from "@/lib/chat-store";
-import { useS3Upload } from "next-s3-upload";
+// import { useS3Upload } from "next-s3-upload"; // 不再直接使用 S3
 import { PromptInput } from "@/components/PromptInput";
 import { toast } from "sonner";
 import { useLLMModel } from "@/hooks/useLLMModel";
@@ -24,7 +24,11 @@ function CSVToChatClient({
 }: {
   setIsLoading: (load: boolean) => void;
 }) {
-  const { uploadToS3 } = useS3Upload();
+  // 检查是否有 S3 配置
+  const hasS3Config = !!(
+    process.env.NEXT_PUBLIC_S3_UPLOAD_KEY ||
+    (typeof window !== 'undefined' && localStorage.getItem('s3_config'))
+  );
   const { selectedModelSlug } = useLLMModel();
   const [localFile, setLocalFile] = useState<File | null>(null);
   const [suggestedQuestions, setSuggestedQuestions] = useState<
@@ -54,7 +58,30 @@ function CSVToChatClient({
         setCsvRows(sampleRows);
         setCsvHeaders(headers);
 
-        const uploadPromise = uploadToS3(file);
+        // 选择上传方式
+        let uploadedFile: { url: string; key: string };
+        
+        if (hasS3Config) {
+          // 使用 S3 上传（如果配置了 S3）
+          const { useS3Upload } = await import("next-s3-upload");
+          const { uploadToS3 } = useS3Upload();
+          uploadedFile = await uploadToS3(file);
+        } else {
+          // 使用本地上传
+          const formData = new FormData();
+          formData.append('file', file);
+          
+          const uploadResponse = await fetch("/api/local-upload", {
+            method: "POST",
+            body: formData,
+          });
+          
+          if (!uploadResponse.ok) {
+            throw new Error(`Upload failed: ${uploadResponse.status}`);
+          }
+          
+          uploadedFile = await uploadResponse.json();
+        }
 
         const response = await fetch("/api/generate-questions", {
           method: "POST",
@@ -67,8 +94,6 @@ function CSVToChatClient({
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-
-        const uploadedFile = await uploadPromise;
 
         setUploadedFileUrl(uploadedFile.url);
 
