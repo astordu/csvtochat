@@ -1,6 +1,18 @@
 <a href="https://csvtochat.com/">
 <img alt="CSV2Chat" src="./public/og.jpg">
 </a>
+## 🚀 雷哥AI 优化版本
+
+> **雷哥AI (http://leigeai.com) 备注**
+
+### ⚡ 简化配置
+- **原版问题**: 需要配置多个API密钥（云存储、云Redis等）
+- **优化后**: 只需配置一个 `TOGETHER_AI_API_KEY`，大大简化了部署流程
+
+### 🎯 优势
+- ✅ **配置简单**: 一个密钥即可运行
+- ✅ **测试友好**: 方便开发者快速体验
+- ✅ **功能完整**: 保留所有核心功能
 
 <div align="center">
     <h1>CSV2Chat</h1>
